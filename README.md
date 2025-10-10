@@ -1,9 +1,10 @@
 # PCD 3D Viewer
+PCDファイルを読み込んで3D表示するビューアです。
 
-Three.jsを使用してPCDファイルを読み込んで3D表示するビューアです。
+
+<img width="1665" height="907" alt="image" src="https://github.com/user-attachments/assets/c7b9b6c4-807e-4a4a-b442-dc30ead4a88c" />
 
 ## 機能
-
 - PCDファイルのドラッグ&ドロップ読み込み
 - ファイル選択による読み込み
 - デフォルトPCDファイル読み込み
@@ -36,31 +37,13 @@ npm start
 2. または「デフォルトPCDを読み込み」でワークスペース内のPCDファイルを読み込み
 
 ## 対応フォーマット
-
 - PCD (Point Cloud Data) ファイル
-- ASCII形式
-- RGB色情報対応
 
-## 技術仕様
 
-- Three.js r128
-- OrbitControls
-- BufferGeometry
-- PointsMaterial
-
-## ファイル構成
-
-```
-.
-├── index.html          # メインHTMLファイル
-├── js/
-│   └── pcd-viewer.js   # PCDビューアのメインロジック
-├── package.json        # プロジェクト設定
-└── README.md          # このファイル
-```
-
-## 注意事項
-
+## TODO
+・走行中のロボットの自己位置を表示できるようにする
+・ロボットの走行記録を再生、停止機能
+・走行中のデータからwaypointを打てるようにする
 - 大きなPCDファイルはメモリ使用量が多くなる場合があります
 - ブラウザのWebGLサポートが必要です
 - ローカルサーバーでの実行が推奨されます（CORS制限のため）
