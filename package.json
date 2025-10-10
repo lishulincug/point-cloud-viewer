@@ -1,0 +1,16 @@
+{
+  "name": "pcd-3d-viewer",
+  "version": "1.0.0",
+  "description": "3D PCD file viewer using Three.js",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": ["pcd", "3d", "threejs", "viewer"],
+  "author": "",
+  "license": "MIT"
+}
