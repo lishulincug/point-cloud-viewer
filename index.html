@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,42 +76,46 @@
         <div id="controls">
             <div>PCD 3D Viewer</div>
             <input type="file" id="fileInput" accept=".pcd" />
-            <button onclick="loadDefaultPCD()">デフォルトPCDを読み込み</button>
-            <button onclick="resetCamera()">カメラリセット</button>
+            <button onclick="loadDefaultPCD()">加载默认PCD</button>
+            <button onclick="resetCamera()">重置相机</button>
             <div style="margin-top: 10px;">
-                <label for="colorMode">カラーリング:</label>
+                <label>点大小: <input type="range" id="pointSizeSlider" min="0.05" max="5" value="0.1" step="0.1" oninput="updatePointSize()"></label>
+                <span id="pointSizeValue">0.05</span>
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="colorMode">着色模式:</label>
                 <select id="colorMode" onchange="changeColorMode()">
-                    <option value="default">デフォルト</option>
-                    <option value="height">高度グラデーション</option>
-                    <option value="rainbow">レインボー</option>
-                    <option value="heat">ヒートマップ</option>
+                    <option value="default">默认</option>
+                    <option value="height">高度渐变</option>
+                    <option value="rainbow">彩虹</option>
+                    <option value="heat">热力图</option>
                 </select>
             </div>
             <div style="margin-top: 10px;">
-                <label for="heightFilter">高さフィルタ:</label>
+                <label for="heightFilter">高度过滤器:</label>
                 <div>
                     <label>最小: <input type="range" id="minHeightSlider" min="0" max="100" value="0" step="0.1" onchange="updateHeightFilter()"></label>
                     <span id="minHeightValue">0.0</span>
                 </div>
                 <div>
                     <label>最大: <input type="range" id="maxHeightSlider" min="0" max="100" value="100" step="0.1" onchange="updateHeightFilter()"></label>
-                    <span id="maxHeightValue">100.0</span>
+                    <span id="maxHeightValue">1000.0</span>
                 </div>
-                <button onclick="resetHeightFilter()">リセット</button>
+                <button onclick="resetHeightFilter()">重置</button>
             </div>
             <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
-                <div><strong>Waypoint編集モード</strong></div>
+                <div><strong>路点编辑模式</strong></div>
                 <div>
                     <input type="checkbox" id="waypointMode" onchange="toggleWaypointMode()">
-                    <label for="waypointMode">Waypointモード</label>
+                    <label for="waypointMode">路点模式</label>
                 </div>
-                <button onclick="clearWaypoints()">全削除</button>
-                <button onclick="removeLastWaypoint()">一個削除</button>
-                <button onclick="exportWaypoints()">エクスポート</button>
-                <div id="waypointCount">Waypoints: 0</div>
+                <button onclick="clearWaypoints()">全部删除</button>
+                <button onclick="removeLastWaypoint()">删除上一个</button>
+                <button onclick="exportWaypoints()">导出</button>
+                <div id="waypointCount">路点数: 0</div>
             </div>
-            <div>マウス: 回転・ズーム・パン</div>
-            <div>ROS座標系: 赤=X(前), 緑=Y(左), 青=Z(上)</div>
+            <div>鼠标: 旋转·缩放·平移</div>
+            <div>ROS坐标系: 红=X(前), 绿=Y(左), 蓝=Z(上)</div>
         </div>
         
         <div id="info">
@@ -122,6 +126,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PCDLoader.js"></script>
     <script src="js/pcd-viewer.js"></script>
 </body>
 </html>

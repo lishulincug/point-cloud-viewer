@@ -1,16 +1,43 @@
 {
-  "name": "pcd-3d-viewer",
+  "name": "point-cloud-viewer",
   "version": "1.0.0",
-  "description": "3D PCD file viewer using Three.js",
-  "main": "index.html",
+  "description": "3D Point Cloud Viewer using React and Three.js - supports PCD, PLY, LAS formats",
+  "private": true,
   "scripts": {
-    "dev": "npx http-server -p 8080 -c-1",
-    "start": "npm run dev"
+    "dev": "rsbuild dev --open",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0",
+    "three": "^0.170.0"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "@rsbuild/core": "^1.1.0",
+    "@rsbuild/plugin-react": "^1.1.0",
+    "@rsbuild/plugin-sass": "^1.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.170.0",
+    "sass": "^1.80.0",
+    "typescript": "^5.6.0"
   },
-  "keywords": ["pcd", "3d", "threejs", "viewer"],
+  "keywords": [
+    "point-cloud",
+    "pcd",
+    "ply",
+    "las",
+    "3d",
+    "threejs",
+    "react",
+    "viewer",
+    "lidar"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

@@ -6,14 +6,17 @@ class PCDViewer {
         this.renderer = null;
         this.controls = null;
         this.pointCloud = null;
-        this.currentPCDData = null;  // 現在のPCDデータを保持
-        this.colorMode = 'default';  // カラーモード
+        this.currentPCDData = null;  // 当前PCD数据
+        this.colorMode = 'height';  // 颜色模式
         this.minHeight = null;  // 最小高度
         this.maxHeight = null;  // 最大高度
-        this.heightFilterMin = 0;  // フィルタ最小値（正規化済み）
-        this.heightFilterMax = 1;  // フィルタ最大値（正規化済み）
+        this.heightFilterMin = 0;  // 过滤器最小值（归一化）
+        this.heightFilterMax = 1;  // 过滤器最大值（归一化）
         
-        // Waypoint機能
+        // PCDLoader
+        this.pcdLoader = new THREE.PCDLoader();
+        
+        // Waypoint功能
         this.waypointMode = false;
         this.waypoints = [];
         this.waypointConnections = [];
@@ -22,7 +25,7 @@ class PCDViewer {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         
-        // ROS座標系でのデフォルトカメラ位置（後方・右・上から見る）
+        // ROS坐标系默认相机位置（从后方、右侧、上方观察）
         this.defaultCameraPosition = { x: 50, y: 50, z: -50 };
         
         this.init();
@@ -162,131 +165,98 @@ class PCDViewer {
     }
     
     loadPCDFile(file) {
-        this.updateLoadStatus('読み込み中...');
+        this.updateLoadStatus('加载中...');
         
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const pcdData = this.parsePCD(event.target.result);
+        const url = URL.createObjectURL(file);
+        
+        this.pcdLoader.load(
+            url,
+            (points) => {
+                URL.revokeObjectURL(url);
+                const pcdData = this.extractPCDData(points);
                 this.createPointCloud(pcdData);
-                this.updateLoadStatus('読み込み完了');
-            } catch (error) {
-                console.error('PCD parsing error:', error);
-                this.updateLoadStatus('エラー: ' + error.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-    
-    async loadDefaultPCD() {
-        try {
-            this.updateLoadStatus('デフォルトPCD読み込み中...');
-            const response = await fetch('tsukuba_pointcloud.pcd');
-            if (!response.ok) {
-                throw new Error('ファイルが見つかりません');
-            }
-            const text = await response.text();
-            const pcdData = this.parsePCD(text);
-            this.createPointCloud(pcdData);
-            this.updateLoadStatus('読み込み完了');
-        } catch (error) {
-            console.error('Default PCD loading error:', error);
-            this.updateLoadStatus('エラー: ' + error.message);
-        }
-    }
-    
-    parsePCD(pcdText) {
-        const lines = pcdText.split('\n');
-        const header = {};
-        let dataStartIndex = 0;
-        
-        // ヘッダー解析
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line.startsWith('DATA')) {
-                dataStartIndex = i + 1;
-                break;
-            }
-            
-            const parts = line.split(/\s+/);
-            if (parts.length >= 2) {
-                const key = parts[0];
-                const value = parts.slice(1);
-                header[key] = value;
-            }
-        }
-        
-        // フィールド情報
-        const fields = header['FIELDS'] || ['x', 'y', 'z'];
-        const types = header['TYPE'] || ['F', 'F', 'F'];
-        const sizes = header['SIZE'] || ['4', '4', '4'];
-        const counts = header['COUNT'] || ['1', '1', '1'];
-        const points = parseInt(header['POINTS'][0]) || 0;
-        
-        console.log('PCD Header:', header);
-        console.log('Expected points:', points);
-        
-        // データ解析
-        const vertices = [];
-        const colors = [];
-        
-        const hasColor = fields.includes('rgb') || fields.includes('r');
-        
-        for (let i = dataStartIndex; i < lines.length && i - dataStartIndex < points; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-            
-            const values = line.split(/\s+/).map(v => parseFloat(v));
-            
-            if (values.length >= 3 && !isNaN(values[0]) && !isNaN(values[1]) && !isNaN(values[2])) {
-                // 座標（ROS座標系からThree.js座標系への変換）
-                // ROS: X=前方, Y=左, Z=上 → Three.js: X=右, Y=上, Z=手前
-                const x_ros = values[0];  // ROS X (前方)
-                const y_ros = values[1];  // ROS Y (左)
-                const z_ros = values[2];  // ROS Z (上)
-                
-                // Three.js座標系に変換（Z軸を反転表示）
-                const x_threejs = -y_ros;  // ROS Y(左) → Three.js X(右) なので反転
-                const y_threejs = z_ros;   // ROS Z(上) → Three.js Y(上)
-                const z_threejs = -x_ros;  // ROS X(前方) → Three.js Z(手前) を反転表示
-                
-                vertices.push(x_threejs, y_threejs, z_threejs);
-                
-                // 色
-                if (hasColor && values.length > 3) {
-                    if (fields.includes('rgb')) {
-                        // RGB packed format
-                        const rgb = values[3];
-                        const r = ((rgb >> 16) & 0xff) / 255;
-                        const g = ((rgb >> 8) & 0xff) / 255;
-                        const b = (rgb & 0xff) / 255;
-                        colors.push(r, g, b);
-                    } else if (fields.includes('r')) {
-                        // Separate RGB channels
-                        const rIndex = fields.indexOf('r');
-                        const gIndex = fields.indexOf('g');
-                        const bIndex = fields.indexOf('b');
-                        
-                        const r = values[rIndex] / 255;
-                        const g = values[gIndex] / 255;
-                        const b = values[bIndex] / 255;
-                        colors.push(r, g, b);
-                    } else {
-                        colors.push(0.7, 0.7, 0.7); // デフォルト色
-                    }
-                } else {
-                    colors.push(0.7, 0.7, 0.7); // デフォルト色
+                this.updateLoadStatus('加载完成');
+                console.log('Loaded points:', pcdData.count);
+            },
+            (progress) => {
+                if (progress.total > 0) {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    this.updateLoadStatus(`加载中... ${percent}%`);
                 }
+            },
+            (error) => {
+                URL.revokeObjectURL(url);
+                console.error('PCD loading error:', error);
+                this.updateLoadStatus('错误: ' + error.message);
+            }
+        );
+    }
+    
+    loadDefaultPCD() {
+        this.updateLoadStatus('加载默认PCD中...');
+        
+        this.pcdLoader.load(
+            'tsukuba_pointcloud.pcd',
+            (points) => {
+                const pcdData = this.extractPCDData(points);
+                this.createPointCloud(pcdData);
+                this.updateLoadStatus('加载完成');
+                console.log('Loaded points:', pcdData.count);
+            },
+            (progress) => {
+                if (progress.total > 0) {
+                    const percent = Math.round((progress.loaded / progress.total) * 100);
+                    this.updateLoadStatus(`加载中... ${percent}%`);
+                }
+            },
+            (error) => {
+                console.error('Default PCD loading error:', error);
+                this.updateLoadStatus('错误: ' + error.message);
+            }
+        );
+    }
+    
+    // 从 PCDLoader 加载的点云中提取数据
+    extractPCDData(points) {
+        const geometry = points.geometry;
+        const positions = geometry.attributes.position.array;
+        const vertexCount = positions.length / 3;
+        
+        // 提取或生成颜色
+        let colors;
+        if (geometry.attributes.color) {
+            colors = new Float32Array(geometry.attributes.color.array);
+        } else {
+            // 默认灰色
+            colors = new Float32Array(vertexCount * 3);
+            for (let i = 0; i < vertexCount; i++) {
+                colors[i * 3] = 0.7;
+                colors[i * 3 + 1] = 0.7;
+                colors[i * 3 + 2] = 0.7;
             }
         }
         
-        console.log('Parsed vertices:', vertices.length / 3);
+        // ROS坐标系转换到Three.js坐标系
+        // ROS: X=前方, Y=左, Z=上 → Three.js: X=右, Y=上, Z=后
+        const vertices = new Float32Array(positions.length);
+        for (let i = 0; i < vertexCount; i++) {
+            const x_ros = positions[i * 3];      // ROS X (前方)
+            const y_ros = positions[i * 3 + 1];  // ROS Y (左)
+            const z_ros = positions[i * 3 + 2];  // ROS Z (上)
+            
+            // 转换到Three.js坐标系
+            vertices[i * 3] = -y_ros;      // Three.js X = -ROS Y
+            vertices[i * 3 + 1] = z_ros;   // Three.js Y = ROS Z
+            vertices[i * 3 + 2] = -x_ros;  // Three.js Z = -ROS X
+        }
+        
+        console.log('Extracted vertices:', vertexCount);
         
         return {
-            vertices: new Float32Array(vertices),
-            colors: new Float32Array(colors),
-            count: vertices.length / 3,
-            originalColors: new Float32Array(colors)  // オリジナルの色を保存
+            vertices: vertices,
+            colors: colors,
+            count: vertexCount,
+            originalColors: new Float32Array(colors)
         };
     }
     
@@ -315,7 +285,7 @@ class PCDViewer {
         geometry.setAttribute('position', new THREE.BufferAttribute(filteredData.vertices, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));        // マテリアルの作成
         const material = new THREE.PointsMaterial({
-            size: 0.5,
+            size: 0.05,
             vertexColors: true,
             sizeAttenuation: true
         });
@@ -709,7 +679,7 @@ class PCDViewer {
 
     exportWaypoints() {
         if (this.waypoints.length === 0) {
-            alert('エクスポートするwaypointがありません');
+            alert('没有可导出的路点');
             return;
         }
 
@@ -780,12 +750,12 @@ class PCDViewer {
 
     updateWaypointCount() {
         const count = this.waypoints.length;
-        document.getElementById('waypointCount').textContent = `Waypoints: ${count}`;
+        document.getElementById('waypointCount').textContent = `路点数: ${count}`;
     }
 
     removeLastWaypoint() {
         if (this.waypoints.length === 0) {
-            console.log('削除するwaypointがありません');
+            console.log('没有可删除的路点');
             return;
         }
 
@@ -821,18 +791,27 @@ class PCDViewer {
         });
 
         this.updateWaypointCount();
-        console.log(`Waypoint ${lastWaypoint.name} を削除しました`);
+        console.log(`路点 ${lastWaypoint.name} 已删除`);
     }
 
     setColorMode(mode) {
         this.colorMode = mode;
         if (this.currentPCDData && this.pointCloud) {
-            // フィルタリングされたデータに対してカラーモードを適用
+            // 对过滤后的数据应用颜色模式
             const filteredData = this.applyHeightFilter(this.currentPCDData);
             const colors = this.calculateColors(filteredData);
             this.pointCloud.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
             this.pointCloud.geometry.attributes.color.needsUpdate = true;
         }
+    }
+
+    setPointSize(size) {
+        if (this.pointCloud) {
+            this.pointCloud.material.size = size;
+            this.pointCloud.material.needsUpdate = true;
+        }
+        // 更新显示值
+        document.getElementById('pointSizeValue').textContent = size.toFixed(1);
     }
 }
 
@@ -898,6 +877,13 @@ function removeLastWaypoint() {
 function exportWaypoints() {
     if (viewer) {
         viewer.exportWaypoints();
+    }
+}
+
+function updatePointSize() {
+    if (viewer) {
+        const slider = document.getElementById('pointSizeSlider');
+        viewer.setPointSize(parseFloat(slider.value));
     }
 }
 
