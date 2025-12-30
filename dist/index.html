@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Point Cloud Viewer</title>
+    <!-- 在页面加载最早期同步应用主题，防止闪烁 -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('kbot-theme');
+          if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {
+          console.error('Failed to load theme:', e);
+        }
+      })();
+    </script>
+  <script defer src="./static/js/lib-react.3a8258ed.js"></script><script defer src="./static/js/lib-router.57738e87.js"></script><script defer src="./static/js/558.e5fcefcf.js"></script><script defer src="./static/js/index.33f3c5fc.js"></script><link href="./static/css/index.021be131.css" rel="stylesheet"></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
